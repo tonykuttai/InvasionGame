@@ -21,7 +21,7 @@ var level = 1;
 var count = 0;
 var kill = 0;
 var isPaused = false;
-var highScore = 0;
+// var highScore = 0;
 
 
 var testInterval = window.setInterval(function(){
