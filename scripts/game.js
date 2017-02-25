@@ -21,6 +21,7 @@ var level = 1;
 var count = 0;
 var kill = 0;
 var isPaused = false;
+var cross = 0;
 // var highScore = 0;
 
 
@@ -59,9 +60,8 @@ var player = {
 		});
 	},
 	update: function(){		
-		//console.log(this.x);
-		
-		if(kill > 10 && level < 5){			
+		//console.log(cross);		
+		if(kill > 100 && level < 5){			
 				isPaused = true;				
 				levelIncrease();							
 		}
@@ -136,22 +136,38 @@ var player = {
 		ctx.clearRect(0,0,can.width,can.height);
 		clearInterval(testInterval);		
 		Sound.play("gameover");
-		if(score > highScore){
+		var highScore = 0;
+		highScore = score;
+		if (typeof(Storage) !== "undefined") {
+			var length = localStorage.length;	
+			//console.log("Length : "+length);	
+			if(length > 0){
+				highScore = localStorage.getItem("HighScore");
+				if(score > highScore){
+					highScore = score;
+					localStorage.setItem("HighScore",highScore);
+				}
+			}else{
+				localStorage.setItem("HighScore",score);
+				highScore = score;
+			}
+
+    	} 	
 			//highScore = Score;
 			swal({
-			title: "Game Over. You Lost.",
-			text: "High Score "+score,
-			type: "warning",
-			showCancelButton: false,
-			confirmButtonColor: "#DD6B55",
-			confirmButtonText: "Play Again",
-			closeOnConfirm: false
+				title: "Game Over. You Lost.",
+				text: "Your Score "+score+" \n High Score : "+highScore,
+				type: "warning",
+				showCancelButton: false,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Play Again",
+				closeOnConfirm: false
 			},
 			function(){
 				window.location.reload();				
 				
 			});
-		}
+		
 		
 	}
 
@@ -224,6 +240,13 @@ function Enemy(I) {
 	I.update = function() {
 		I.x += I.xVelocity;
 		I.y += I.yVelocity;
+		if(I.y > 540){
+			I.active = false;
+			cross++;
+			if(cross > 3){
+				gameOver();
+			}			
+		}
 
 		I.xVelocity = 3 * Math.sin(I.age * Math.PI / 64);
 
@@ -269,12 +292,19 @@ function Enemy_2(I) {
 		I.x += I.xVelocity ;
 		I.y += I.yVelocity;
 
+		if(I.y > 540){
+			I.active = false;
+			cross++;
+			if(cross > 3){
+				gameOver();
+			}
+		}
 		I.xVelocity = 3 * Math.sin(I.age * Math.PI / 64);
 
 		I.age++;
 
 		I.active = I.active && I.inBounds();
-		if(I.active == false){
+		/*if(I.active == false){
 			//reset
 			//console.log("Reset enemy 2");
 			I.active = true;
@@ -283,7 +313,7 @@ function Enemy_2(I) {
 			I.xVelocity = 0;
 			I.yVelocity = 2;
 			
-		}
+		}*/
 	};
 
 	I.explode = function() {
@@ -313,7 +343,7 @@ function handleCollision() {
 			if(collides(bullet, enemy_2)) {
 				
 				enemy_2.explode();
-				score += 100; //score Variable
+				score += 20; //score Variable
 				kill += 1;
 				bullet.active = false;
 			}
@@ -355,7 +385,7 @@ function lifeDisplay(){
 	var ctx = document.getElementById('gameCanvas').getContext('2d');
 	ctx.fillStyle = "##E9967A";		
 	ctx.font = "14px Courier New";	
-	ctx.fillText("Life Remaining : "+life,445,35);
+	ctx.fillText("Life Remaining :"+life,445,35);
 	ctx.fill();
 }
 function levelDisplay(){
@@ -385,4 +415,43 @@ function levelIncrease(){
 				level = level + 1;
 			}		
 			isPaused = false;
+}
+
+function gameOver(){
+		var can = document.getElementById('gameCanvas');
+		var ctx = can.getContext('2d');
+		ctx.clearRect(0,0,can.width,can.height);
+		clearInterval(testInterval);		
+		Sound.play("gameover");
+		var highScore = 0;
+		highScore = score;
+		if (typeof(Storage) !== "undefined") {
+			var length = localStorage.length;	
+			console.log("Length : "+length);	
+			if(length > 0){
+				highScore = localStorage.getItem("HighScore");
+				if(score > highScore){
+					highScore = score;
+					localStorage.setItem("HighScore",highScore);
+				}
+			}else{
+				localStorage.setItem("HighScore",score);
+				highScore = score;
+			}
+
+    	} 	
+			//highScore = Score;
+			swal({
+				title: "Game Over. You Lost.",
+				text: "Your Score "+score+" \n High Score : "+highScore,
+				type: "warning",
+				showCancelButton: false,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Play Again",
+				closeOnConfirm: false
+			},
+			function(){
+				window.location.reload();				
+				
+			});
 }
