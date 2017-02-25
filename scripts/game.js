@@ -61,7 +61,7 @@ var player = {
 	update: function(){		
 		//console.log(this.x);
 		
-		if(kill > 10 && level < 5){			
+		if(kill > 100 && level < 5){			
 				isPaused = true;				
 				levelIncrease();							
 		}
@@ -136,22 +136,38 @@ var player = {
 		ctx.clearRect(0,0,can.width,can.height);
 		clearInterval(testInterval);		
 		Sound.play("gameover");
-		if(score > highScore){
+		var highScore = 0;
+		highScore = score;
+		if (typeof(Storage) !== "undefined") {
+			var length = localStorage.length;	
+			console.log("Length : "+length);	
+			if(length > 0){
+				highScore = localStorage.getItem("HighScore");
+				if(score > highScore){
+					highScore = score;
+					localStorage.setItem("HighScore",highScore);
+				}
+			}else{
+				localStorage.setItem("HighScore",score);
+				highScore = score;
+			}
+
+    	} 	
 			//highScore = Score;
 			swal({
-			title: "Game Over. You Lost.",
-			text: "High Score "+score,
-			type: "warning",
-			showCancelButton: false,
-			confirmButtonColor: "#DD6B55",
-			confirmButtonText: "Play Again",
-			closeOnConfirm: false
+				title: "Game Over. You Lost.",
+				text: "Your Score "+score+" \n High Score : "+highScore,
+				type: "warning",
+				showCancelButton: false,
+				confirmButtonColor: "#DD6B55",
+				confirmButtonText: "Play Again",
+				closeOnConfirm: false
 			},
 			function(){
 				window.location.reload();				
 				
 			});
-		}
+		
 		
 	}
 
