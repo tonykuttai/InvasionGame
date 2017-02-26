@@ -5,7 +5,13 @@ window.onload = function loadCanvas(){
 	gameCan.width = 600;
 	gameCan.height = 600;	
 	div.appendChild(gameCan);	
-	//swal("Click to STart the Game");	
+	swal({
+					title: "Invasion Game",
+					text: "Tony Varghese",
+					timer: 500,
+					showConfirmButton: false		
+		});	
+	startGame();
 }
 
 var CANVAS_WIDTH = 600;
@@ -22,45 +28,43 @@ var count = 0;
 var kill = 0;
 var isPaused = false;
 var cross = 0;
-// var highScore = 0;
-
-
-var testInterval = window.setInterval(function(){
+var highScore = 0;
+var soundPlay = 0;
+var gameInterval = window.setInterval(function(){
 	if(!isPaused){
-		update();
-		draw();
+		startGame();
 	}		
 	},1000/(FPS));
+function startGame(){
+	update();
+	draw();
+}
 
-
-var player = {
-	color: "#B22222",
+// Class Player
+var player = {	
 	x: 300,
 	y: 540,
 	width: 32,
 	height: 32,
-
-	sprite: Sprite("player"),
-	count: 0,
+	sprite: Sprite("kitten"),
+	active: true,	
 	draw: function(){		
 		var can = document.getElementById('gameCanvas');
 		var ctx = can.getContext('2d');
 		this.sprite.draw(ctx, this.x, this.y);	
-
+		this.active = true;
 		playerBullets.forEach(function(bullet){
 			bullet.draw();
 		});
 		enemies.forEach(function(enemy) {
 			enemy.draw();
-		});
-		
+		});		
 		enemies_2.forEach(function(enemy_2) {
-		enemy_2.draw();
-		
+		enemy_2.draw();		
 		});
 	},
 	update: function(){		
-		//console.log(cross);		
+		//console.log("X ; "+this.x+"  Y : this.y");	
 		if(kill > 100 && level < 5){			
 				isPaused = true;				
 				levelIncrease();							
@@ -74,13 +78,23 @@ var player = {
 				this.x -= 5;
 			}
 		}	
-
 		if(keydown.right) {
 			if(this.x <= 505){
 				this.x += 5;
 			}			
 		}
+		if(keydown.up){
+			if(this.y - 3 >= 300){
+				this.y -= 3;
+			}
+		}
+		if(keydown.down){
+			if(this.y + 3 <= 540){
+				this.y += 3;
+			}
+		}
 		this.x = this.x.clamp(0, CANVAS_WIDTH - this.width);
+		this.y = this.y.clamp(0, CANVAS_HEIGHT - this.height);
 
 		playerBullets.forEach(function(bullet){
 			bullet.update();
@@ -88,20 +102,20 @@ var player = {
 		playerBullets = playerBullets.filter(function(bullet){
 			return bullet.active;
 		});
-		enemies.forEach(function(enemy) {
-			enemy.update();
-		});
 		enemies = enemies.filter(function(enemy) {
 			return enemy.active;
 		});
+		enemies.forEach(function(enemy) {
+			enemy.update();
+		});
+		enemies_2 = enemies_2.filter(function(enemy_2) {
+			return enemy_2.active;
+		});	
 	
-		enemies_2.forEach(function(enemy_2)
-				{
-					enemy_2.update();
-				});
-			enemies_2 = enemies_2.filter(function(enemy_2) {
-				return enemy_2.active;
-			});	
+		enemies_2.forEach(function(enemy_2){
+			enemy_2.update();
+		});
+		
 		
 		alternate = alternate + 1;
 
@@ -129,14 +143,14 @@ var player = {
 			y: this.y + this.height/2
 		};
 	},
-	explode: function() {		
-		
+	explode: function() {	
+		if(soundPlay == 1){
+			Sound.play("gameover");	
+		}			
 		var can = document.getElementById('gameCanvas');
 		var ctx = can.getContext('2d');
-		ctx.clearRect(0,0,can.width,can.height);
-		clearInterval(testInterval);		
-		Sound.play("gameover");
-		var highScore = 0;
+		//ctx.clearRect(0,0,can.width,can.height);
+		//clearInterval(testInterval);			
 		highScore = score;
 		if (typeof(Storage) !== "undefined") {
 			var length = localStorage.length;	
@@ -153,9 +167,10 @@ var player = {
 			}
 
     	} 	
-			//highScore = Score;
+			endGame();
+			
 			swal({
-				title: "Game Over. You Lost.",
+				title: "Game Over.!!!",
 				text: "Your Score "+score+" \n High Score : "+highScore,
 				type: "warning",
 				showCancelButton: false,
@@ -164,12 +179,26 @@ var player = {
 				closeOnConfirm: false
 			},
 			function(){
-				window.location.reload();				
+				//window.location.reload();				
+				//this.reset();
 				
-			});
-		
-		
-	}
+				swal({
+					title: "New Game",
+					text: "",
+					timer: 500,
+					showConfirmButton: false		
+				});	
+				player.active = true;
+				score = 0;
+			});		
+			soundPlay = 0;
+	},
+	reset : function(){
+		this.x = 300;
+		this.y = 540;
+		this.active = true;
+	},
+	
 
 };
 function draw(){	
@@ -177,10 +206,10 @@ function draw(){
 	var ctx = can.getContext('2d');
 	ctx.clearRect(0,0,can.width,can.height);		 
 	ctx.fill();
-	scoreDisplay();
-	lifeDisplay();
-	levelDisplay();
-	player.draw();
+	scoreDisplay();	
+	if(player.active == true){
+		player.draw();
+	}	
 }
 function update(){	
 	player.update();
@@ -215,52 +244,46 @@ function Enemy(I) {
 	var canvas = can.getContext('2d');
 	I = I || {};
 	I.active = true;
-	I.age = Math.floor(Math.random() * 128);
-	I.color = "#ff0";
+	I.age = Math.floor(Math.random() * 128);	
 	I.x = CANVAS_WIDTH / 4 + Math.random() * CANVAS_WIDTH / 2;
 	I.y = 0;
 	I.xVelocity = 0;
 	I.yVelocity = level;
 	I.width = 32;
 	I.height = 32;
-	I.sprite = Sprite("enemy");
+	I.sprite = Sprite("enemy_3");
 
 	I.inBounds = function() {
 		return I.x >= 0 && I.x <= CANVAS_WIDTH && I.y >= 0 && I.y <= CANVAS_HEIGHT;
 	};
-
 	I.draw = function() {
-		/*canvas.fillStyle = this.color;
-		canvas.fillRect(this.x, this.y, this.width, this.height);*/
 		this.sprite.draw(canvas, this.x, this.y);
 	};
-
-	
-
 	I.update = function() {
 		I.x += I.xVelocity;
 		I.y += I.yVelocity;
 		if(I.y > 540){
 			I.active = false;
 			cross++;
-			if(cross > 3){
-				gameOver();
+			if(cross > 5 && player.active){
+				soundPlay = 1;
+				player.explode();
 			}			
 		}
-
 		I.xVelocity = 3 * Math.sin(I.age * Math.PI / 64);
-
 		I.age ++;
-
-		I.active = I.active && I.inBounds();
-		
+		I.active = I.active && I.inBounds();		
 	};
-
 	I.explode = function() {
 		Sound.play("explosion");
 		this.active = false;
 	};
-
+	I.reset = function(){
+		I.x = CANVAS_WIDTH / 4 + Math.random() * CANVAS_WIDTH / 2;
+		I.y = 0;
+		I.age = Math.floor(Math.random() * 128);
+		I.active = true;
+	};
 	return I;
 }
 function Enemy_2(I) {
@@ -283,44 +306,35 @@ function Enemy_2(I) {
 	};
 
 	I.draw = function() {
-		/*canvas.fillStyle = this.color;
-		canvas.fillRect(this.x, this.y, this.width, this.height);*/
 		this.sprite.draw(canvas, this.x, this.y);
 	};
 
 	I.update = function() {
 		I.x += I.xVelocity ;
 		I.y += I.yVelocity;
-
 		if(I.y > 540){
 			I.active = false;
 			cross++;
-			if(cross > 3){
-				gameOver();
+			if(cross > 5 && player.active){
+				soundPlay = 1;
+				player.explode();
 			}
 		}
 		I.xVelocity = 3 * Math.sin(I.age * Math.PI / 64);
-
 		I.age++;
-
-		I.active = I.active && I.inBounds();
-		/*if(I.active == false){
-			//reset
-			//console.log("Reset enemy 2");
-			I.active = true;
-			I.x = CANVAS_WIDTH / 4 + Math.random() * CANVAS_WIDTH / 2;
-			I.y = 0;
-			I.xVelocity = 0;
-			I.yVelocity = 2;
-			
-		}*/
+		I.active = I.active && I.inBounds();		
 	};
-
 	I.explode = function() {
 		Sound.play("explosion");
 		this.active = false;
 	};
-
+	I.reset = function(){
+		I.x = CANVAS_WIDTH / 4 + Math.random() * CANVAS_WIDTH / 2;
+		I.y = 0;
+		I.age = Math.floor(Math.random() * 128);
+		I.active = true;
+	};
+	
 	return I;
 }
 
@@ -331,8 +345,7 @@ function collides(a, b) {
 function handleCollision() {
 	playerBullets.forEach(function(bullet) {
 		enemies.forEach(function(enemy) {
-			if(collides(bullet, enemy)) {
-				
+			if(collides(bullet, enemy)) {				
 				enemy.explode();
 				score += 10; //score Variable
 				kill += 1;
@@ -356,6 +369,7 @@ function handleCollision() {
 			life = life - 1;
 		    if (life < 0) {
 			  player.active = false;
+			  soundPlay = 1;
 			  player.explode();
 		    }
 		}
@@ -366,6 +380,7 @@ function handleCollision() {
 			life = life - 1;
 		    if (life < 0) {
 			  player.active = false;
+			  soundPlay = 1;
 			  player.explode();
 		    }
 		}
@@ -375,25 +390,19 @@ function handleCollision() {
 function scoreDisplay(){
 	//score
 	var ctx = document.getElementById('gameCanvas').getContext('2d');
-	ctx.fillStyle = "#FF4500";
-	ctx.font = "14px Courier New";
-	ctx.fillText("Score : "+score,445,20);	
-	ctx.fill();
-}
-function lifeDisplay(){
-	//life
-	var ctx = document.getElementById('gameCanvas').getContext('2d');
-	ctx.fillStyle = "##E9967A";		
-	ctx.font = "14px Courier New";	
-	ctx.fillText("Life Remaining :"+life,445,35);
-	ctx.fill();
-}
-function levelDisplay(){
-	//Level
-	var ctx = document.getElementById('gameCanvas').getContext('2d');
-	ctx.fillStyle = "#FF4500";		
-	ctx.font = "14px Courier New";	
+	ctx.fillStyle = "#800000";
+	ctx.font = "bold 14px Courier New";
+		if (typeof(Storage) !== "undefined") {
+			var length = localStorage.length;			
+				if(length > 0){
+					highScore = localStorage.getItem("HighScore");
+				}
+    	}
+	ctx.fillText("Score : "+score,445,20);
+	ctx.fillText("Life Remaining :"+life,445,35);	
 	ctx.fillText("Level : "+level,445,50);
+	ctx.fillText("High Score : "+highScore,445,65);
+	ctx.fillText("Enemies Crossed: "+cross,445,80);
 	ctx.fill();
 }
 
@@ -406,52 +415,33 @@ function levelIncrease(){
   		showConfirmButton: false		
 	});	
 	enemies.forEach(function(enemy) {
-				enemy.explode();
+				enemy.reset();
 			});
-			enemies_2.forEach(function(enemy_2) {
-				enemy_2.explode();
-			});
-			if(level < 5){
-				level = level + 1;
-			}		
-			isPaused = false;
+	enemies_2.forEach(function(enemy_2) {
+		enemy_2.reset();
+	});
+	if(level < 5){
+		level = level + 1;
+	}		
+	isPaused = false;
 }
-
-function gameOver(){
-		var can = document.getElementById('gameCanvas');
-		var ctx = can.getContext('2d');
-		ctx.clearRect(0,0,can.width,can.height);
-		clearInterval(testInterval);		
-		Sound.play("gameover");
-		var highScore = 0;
-		highScore = score;
-		if (typeof(Storage) !== "undefined") {
-			var length = localStorage.length;	
-			console.log("Length : "+length);	
-			if(length > 0){
-				highScore = localStorage.getItem("HighScore");
-				if(score > highScore){
-					highScore = score;
-					localStorage.setItem("HighScore",highScore);
-				}
-			}else{
-				localStorage.setItem("HighScore",score);
-				highScore = score;
-			}
-
-    	} 	
-			//highScore = Score;
-			swal({
-				title: "Game Over. You Lost.",
-				text: "Your Score "+score+" \n High Score : "+highScore,
-				type: "warning",
-				showCancelButton: false,
-				confirmButtonColor: "#DD6B55",
-				confirmButtonText: "Play Again",
-				closeOnConfirm: false
-			},
-			function(){
-				window.location.reload();				
-				
+function endGame(){
+	player.active = false;
+	player.x = 300;
+	player.y = 540;
+	enemies.forEach(function(enemy) {
+				enemy.active = false;
 			});
+	enemies_2.forEach(function(enemy_2) {
+		enemy_2.active = false;
+	});	
+	playerBullets = [];
+	life = 3;
+	alternate = 0;
+	level = 1;
+	count = 0;
+	kill = 0;
+	isPaused = false;
+	cross = 0;	
+	
 }
